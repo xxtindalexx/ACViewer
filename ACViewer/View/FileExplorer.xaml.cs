@@ -43,6 +43,7 @@ namespace ACViewer.View
         public bool TeleportMode { get; set; }
 
         public History History { get; set; }
+        public bool SuppressHistory { get; set; }
 
         public List<string> FileIDs
         {
@@ -188,12 +189,17 @@ namespace ACViewer.View
             if (fileID == 0) return;
 
             Selected_FileID = fileID;
-            History.Add(fileID);
+
+            if (!SuppressHistory)
+                History.Add(fileID);
 
             if (PortalMode)
                 ReadPortalFile(fileID);
             else
                 ReadCellFile(fileID);
+
+            // Update history panel after any navigation
+            HistoryPanel.Instance?.RefreshHistory();
         }
 
         public void ReadCellFile(uint fileID)
@@ -434,6 +440,60 @@ namespace ACViewer.View
                     ScriptList.Instance.ScriptTable_OnClick(fileID);
                     break;
             }
+        }
+
+        public void NavigateToHistoryOffset(int offset)
+        {
+            if (History == null) return;
+
+            var targetDID = History.NavigateByOffset(offset);
+            if (targetDID == null) return;
+
+            // Navigate without adding to history (we're already in history)
+            SuppressHistory = true;
+            Finder.Navigate(targetDID.Value.ToString("X8"));
+            SuppressHistory = false;
+
+            // Update history panel after navigation
+            HistoryPanel.Instance?.RefreshHistory();
+        }
+
+        public string GetFileTypeLabel(uint did)
+        {
+            var fileTypeID = did >> 24;
+            var fileTypeName = "Unknown";
+
+            // Check FileTypes list
+            if (FileTypes != null)
+            {
+                // First try exact match (for special IDs like CharGen)
+                var exactMatch = FileTypes.FirstOrDefault(ft => ft.ID == did);
+                if (exactMatch != null)
+                {
+                    fileTypeName = exactMatch.Name;
+                }
+                else
+                {
+                    // Then try by high byte
+                    var typeMatch = FileTypes.FirstOrDefault(ft => ft.ID == fileTypeID);
+                    if (typeMatch != null)
+                    {
+                        fileTypeName = typeMatch.Name;
+                    }
+                    else
+                    {
+                        // Special cases for Cell and Landblock
+                        if ((did & 0xFFFF) == 0xFFFF)
+                            fileTypeName = "Landblock";
+                        else if ((did & 0xFFFF) == 0xFFFE)
+                            fileTypeName = "LandblockInfo";
+                        else if (fileTypeID == 0)
+                            fileTypeName = "EnvCell";
+                    }
+                }
+            }
+
+            return $"{fileTypeName} - 0x{did:X8}";
         }
     }
 }

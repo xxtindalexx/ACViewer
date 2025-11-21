@@ -10,8 +10,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="25"/>
             <RowDefinition Height="22.5"/>
-            <RowDefinition Height=".5*"/>
-            <RowDefinition Height=".5*"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>
@@ -19,10 +18,31 @@
         </Grid.ColumnDefinitions>
         <Label Content="File Type" Grid.ColumnSpan="2"/>
         <ComboBox Name="FileType" Width="174" ItemsSource="{Binding FileTypes}" Grid.Row="1"  Grid.ColumnSpan="2" Margin="7.5,0,0,0" SelectionChanged="FileType_SelectionChanged" HorizontalAlignment="Left"/>
-        <ListBox Name="Files" Margin="7.5,7.5,0,0" ItemsSource="{Binding FileIDs}" Grid.Row="2" SelectionChanged="Files_SelectionChanged"/>
-        <local:FileInfo Grid.Row="3" Margin="7.5,7.5,0,0" />
-        <local:MotionList Grid.Column="2" Grid.Row="2" Grid.RowSpan="2" />
-        <local:ScriptList Grid.Column="2" Grid.Row="2" Grid.RowSpan="2" Visibility="Hidden" />
-        <local:ClothingTableList Grid.Column="2" Grid.Row="2" Grid.RowSpan="2" Visibility="Hidden" />
+
+        <!-- Left column: Files and FileInfo with independent splitter -->
+        <Grid Grid.Row="2" Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" MinHeight="100"/>
+                <RowDefinition Height="4"/>
+                <RowDefinition Height="*" MinHeight="100"/>
+            </Grid.RowDefinitions>
+            <ListBox Name="Files" Margin="7.5,2,0,0" ItemsSource="{Binding FileIDs}" Grid.Row="0" SelectionChanged="Files_SelectionChanged"/>
+            <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ResizeDirection="Rows" Background="#FFE0E0E0"/>
+            <local:FileInfo Grid.Row="2" Margin="7.5,0,0,0" />
+        </Grid>
+
+        <!-- Right column: History, MotionList with independent splitter -->
+        <Grid Grid.Row="2" Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="150" MinHeight="100"/>
+                <RowDefinition Height="4"/>
+                <RowDefinition Height="*" MinHeight="100"/>
+            </Grid.RowDefinitions>
+            <local:HistoryPanel Grid.Row="0" Margin="7.5,2,7.5,0" />
+            <GridSplitter Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ResizeDirection="Rows" Background="#FFE0E0E0"/>
+            <local:MotionList Grid.Row="2" Margin="7.5,0,7.5,0" />
+            <local:ScriptList Grid.Row="2" Margin="7.5,0,7.5,0" Visibility="Hidden" />
+            <local:ClothingTableList Grid.Row="2" Margin="7.5,0,7.5,0" Visibility="Hidden" />
+        </Grid>
     </Grid>
 </UserControl>

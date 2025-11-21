@@ -112,11 +112,32 @@ namespace ACViewer.View
 
         public ICommand HistoryCommand { get; } = new ActionCommand(() =>
         {
-            var prevDID = FileExplorer.Instance.History.Pop();
+            if (FileExplorer.Instance?.History == null) return;
+
+            var prevDID = FileExplorer.Instance.History.Back();
 
             if (prevDID == null) return;
 
+            FileExplorer.Instance.SuppressHistory = true;
             Finder.Navigate(prevDID.Value.ToString("X8"));
+            FileExplorer.Instance.SuppressHistory = false;
+
+            HistoryPanel.Instance?.RefreshHistory();
+        });
+
+        public ICommand ForwardCommand { get; } = new ActionCommand(() =>
+        {
+            if (FileExplorer.Instance?.History == null) return;
+
+            var nextDID = FileExplorer.Instance.History.Forward();
+
+            if (nextDID == null) return;
+
+            FileExplorer.Instance.SuppressHistory = true;
+            Finder.Navigate(nextDID.Value.ToString("X8"));
+            FileExplorer.Instance.SuppressHistory = false;
+
+            HistoryPanel.Instance?.RefreshHistory();
         });
 
         public static bool DebugMode { get; set; }

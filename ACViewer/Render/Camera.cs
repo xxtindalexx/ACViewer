@@ -28,6 +28,12 @@ namespace ACViewer
         public Vector3 Dir { get; set; }
         public Vector3 Up { get; set; }
 
+        // Orbit camera properties for Model view
+        public Vector3 OrbitTarget { get; set; }
+        public float OrbitDistance { get; set; }
+        public float OrbitAzimuth { get; set; }  // Rotation around vertical axis (radians)
+        public float OrbitElevation { get; set; } // Rotation up/down (radians)
+
         public WpfKeyboard Keyboard => GameView._keyboard;
         public WpfMouse Mouse => GameView._mouse;
 
@@ -235,6 +241,16 @@ namespace ACViewer
 
             Speed = Model_Speed;
 
+            // Set up orbit camera for Model view
+            OrbitTarget = box.Center;
+            var toCamera = Position - OrbitTarget;
+            OrbitDistance = toCamera.Length();
+
+            // Calculate initial orbit angles from current position
+            var horizontalDist = (float)Math.Sqrt(toCamera.X * toCamera.X + toCamera.Y * toCamera.Y);
+            OrbitElevation = (float)Math.Atan2(toCamera.Z, horizontalDist);
+            OrbitAzimuth = (float)Math.Atan2(toCamera.Y, toCamera.X);
+
             CreateLookAt();
         }
 
@@ -319,17 +335,33 @@ namespace ACViewer
                 }
             }
 
-            LastKeyboardState = keyboardState; 
+            LastKeyboardState = keyboardState;
 
-            // camera speed control
+            // Mouse wheel: zoom in Model view, speed control in other views
             if (mouseState.ScrollWheelValue != PrevMouseState.ScrollWheelValue)
             {
                 var diff = mouseState.ScrollWheelValue - PrevMouseState.ScrollWheelValue;
 
-                if (diff >= 0)
-                    Speed *= SpeedMod;
+                if (GameView.ViewMode == ViewMode.Model)
+                {
+                    // Zoom in/out by adjusting orbit distance
+                    var zoomFactor = 0.9f; // Zoom speed
+                    if (diff > 0)
+                        OrbitDistance *= zoomFactor;
+                    else
+                        OrbitDistance /= zoomFactor;
+
+                    // Clamp orbit distance to reasonable values
+                    OrbitDistance = Math.Max(0.1f, Math.Min(OrbitDistance, 1000f));
+                }
                 else
-                    Speed /= SpeedMod;
+                {
+                    // Camera speed control for World/other views
+                    if (diff >= 0)
+                        Speed *= SpeedMod;
+                    else
+                        Speed /= SpeedMod;
+                }
             }
 
             if (mouseState.LeftButton == ButtonState.Pressed && PrevMouseState.LeftButton != ButtonState.Pressed)
@@ -343,7 +375,7 @@ namespace ACViewer
                 if (PrevMouseState.RightButton == ButtonState.Pressed)
                 {
                     MouseEx.GetCursorPos(out var cursorPos);
-                    
+
                     var xDiff = cursorPos.X - (int)LastSetPoint.X;
                     var yDiff = cursorPos.Y - (int)LastSetPoint.Y;
 
@@ -353,13 +385,28 @@ namespace ACViewer
                         yDiff = mouseState.Y - PrevMouseState.Y;
                     }
 
-                    // yaw / x-rotation
-                    Dir = Vector3.Transform(Dir, Matrix.CreateFromAxisAngle(Up,
-                        -SpeedBase * ConfigManager.Config.Mouse.Speed * xDiff));
+                    if (GameView.ViewMode == ViewMode.Model)
+                    {
+                        // Orbit camera around model
+                        var sensitivity = SpeedBase * ConfigManager.Config.Mouse.Speed;
+                        OrbitAzimuth -= sensitivity * xDiff;    // Horizontal rotation
+                        OrbitElevation += sensitivity * yDiff;  // Vertical rotation
 
-                    // pitch / y-rotation
-                    Dir = Vector3.Transform(Dir, Matrix.CreateFromAxisAngle(Vector3.Cross(Up, Dir),
-                        SpeedBase * ConfigManager.Config.Mouse.Speed * yDiff));
+                        // Clamp elevation to prevent flipping
+                        var maxElevation = (float)(Math.PI / 2.0 - 0.01);
+                        OrbitElevation = Math.Max(-maxElevation, Math.Min(OrbitElevation, maxElevation));
+                    }
+                    else
+                    {
+                        // Free camera rotation for World/other views
+                        // yaw / x-rotation
+                        Dir = Vector3.Transform(Dir, Matrix.CreateFromAxisAngle(Up,
+                            -SpeedBase * ConfigManager.Config.Mouse.Speed * xDiff));
+
+                        // pitch / y-rotation
+                        Dir = Vector3.Transform(Dir, Matrix.CreateFromAxisAngle(Vector3.Cross(Up, Dir),
+                            SpeedBase * ConfigManager.Config.Mouse.Speed * yDiff));
+                    }
 
                     if (MainWindow.DebugMode && (xDiff != 0 || yDiff != 0))
                     {
@@ -385,7 +432,29 @@ namespace ACViewer
                 System.Windows.Input.Mouse.OverrideCursor = null;
             }
 
-            Dir.Normalize();
+            // Update camera position from orbit angles (Model view)
+            if (GameView.ViewMode == ViewMode.Model)
+            {
+                // Calculate camera position from orbit parameters
+                var cosElevation = (float)Math.Cos(OrbitElevation);
+                var sinElevation = (float)Math.Sin(OrbitElevation);
+                var cosAzimuth = (float)Math.Cos(OrbitAzimuth);
+                var sinAzimuth = (float)Math.Sin(OrbitAzimuth);
+
+                var offset = new Vector3(
+                    OrbitDistance * cosElevation * cosAzimuth,
+                    OrbitDistance * cosElevation * sinAzimuth,
+                    OrbitDistance * sinElevation
+                );
+
+                Position = OrbitTarget + offset;
+                Dir = Vector3.Normalize(OrbitTarget - Position);
+                Up = Vector3.UnitZ;
+            }
+            else
+            {
+                Dir.Normalize();
+            }
 
             CreateLookAt();
 
