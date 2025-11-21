@@ -8,6 +8,8 @@ using System.Media;
 using System.Windows;
 using System.Windows.Controls;
 
+using AvalonDock.Layout.Serialization;
+
 using ACE.DatLoader;
 using ACE.DatLoader.FileTypes;
 
@@ -127,21 +129,21 @@ namespace ACViewer.View
             switch (selected.ID)
             {
                 case 0x10: // ClothingTable
-                    ScriptList.Instance.Visibility = Visibility.Hidden;
-                    ClothingTableList.Instance.Visibility = Visibility.Visible;
-                    MotionList.Instance.Visibility = Visibility.Hidden;
+                    ShowPanel(ClothingTableAnchorable, true);
+                    ShowPanel(MotionListAnchorable, false);
+                    ShowPanel(ScriptListAnchorable, false);
                     MainWindow.menuMain.miVirindiColorTool.Visibility = Visibility.Visible;
                     break;
                 case 0x34: // PhysicsScriptTable
-                    ScriptList.Instance.Visibility = Visibility.Hidden;
-                    ClothingTableList.Instance.Visibility = Visibility.Hidden;
-                    MotionList.Instance.Visibility = Visibility.Visible;
+                    ShowPanel(ClothingTableAnchorable, false);
+                    ShowPanel(MotionListAnchorable, true);
+                    ShowPanel(ScriptListAnchorable, false);
                     MainWindow.menuMain.miVirindiColorTool.Visibility = Visibility.Collapsed;
                     break;
                 default:
-                    ScriptList.Instance.Visibility = Visibility.Hidden;
-                    ClothingTableList.Instance.Visibility = Visibility.Hidden;
-                    MotionList.Instance.Visibility = Visibility.Visible;
+                    ShowPanel(ClothingTableAnchorable, false);
+                    ShowPanel(MotionListAnchorable, true);
+                    ShowPanel(ScriptListAnchorable, false);
                     MainWindow.menuMain.miVirindiColorTool.Visibility = Visibility.Collapsed;
                     break;
             }
@@ -251,7 +253,8 @@ namespace ACViewer.View
                     FileInfo.SetInfo(new Setup(setup).BuildTree());
                     GameView.ViewMode = ViewMode.Model;
                     ModelViewer.LoadModel(fileID);
-                    MotionList.OnClickSetup(fileID);
+                    var hasMotions = MotionList.OnClickSetup(fileID);
+                    ShowPanel(MotionListAnchorable, hasMotions);
                     break;
                 case 0x03:
                     var anim = DatManager.PortalDat.ReadFromDat<ACE.DatLoader.FileTypes.Animation>(fileID);
@@ -494,6 +497,108 @@ namespace ACViewer.View
             }
 
             return $"{fileTypeName} - 0x{did:X8}";
+        }
+
+        private void ShowPanel(AvalonDock.Layout.LayoutAnchorable anchorable, bool show)
+        {
+            if (anchorable == null) return;
+
+            if (show)
+                anchorable.Show();
+            else
+                anchorable.Hide();
+        }
+
+        public void TogglePanelVisibility(string panelName, bool show)
+        {
+            AvalonDock.Layout.LayoutAnchorable anchorable = null;
+
+            switch (panelName)
+            {
+                case "History":
+                    anchorable = HistoryAnchorable;
+                    break;
+                case "Motions":
+                    anchorable = MotionListAnchorable;
+                    break;
+                case "Scripts":
+                    anchorable = ScriptListAnchorable;
+                    break;
+                case "Clothing":
+                    anchorable = ClothingTableAnchorable;
+                    break;
+            }
+
+            if (anchorable == null) return;
+
+            if (show)
+                anchorable.Show();
+            else
+                anchorable.Hide();
+        }
+
+        private static string LayoutFilePath => Path.Combine(
+            System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData),
+            "ACViewer", "dock_layout.xml");
+
+        public void SaveLayout()
+        {
+            try
+            {
+                var directory = Path.GetDirectoryName(LayoutFilePath);
+                if (!Directory.Exists(directory))
+                    Directory.CreateDirectory(directory);
+
+                var serializer = new XmlLayoutSerializer(DockManager);
+                using (var stream = new StreamWriter(LayoutFilePath))
+                {
+                    serializer.Serialize(stream);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to save dock layout: {ex.Message}");
+            }
+        }
+
+        public void LoadLayout()
+        {
+            try
+            {
+                if (!File.Exists(LayoutFilePath)) return;
+
+                var serializer = new XmlLayoutSerializer(DockManager);
+
+                // Handle content restoration for floating windows
+                serializer.LayoutSerializationCallback += (s, args) =>
+                {
+                    // Match content by ContentId
+                    switch (args.Model.ContentId)
+                    {
+                        case "HistoryAnchorable":
+                            args.Content = HistoryAnchorable.Content;
+                            break;
+                        case "MotionListAnchorable":
+                            args.Content = MotionListAnchorable.Content;
+                            break;
+                        case "ScriptListAnchorable":
+                            args.Content = ScriptListAnchorable.Content;
+                            break;
+                        case "ClothingTableAnchorable":
+                            args.Content = ClothingTableAnchorable.Content;
+                            break;
+                    }
+                };
+
+                using (var stream = new StreamReader(LayoutFilePath))
+                {
+                    serializer.Deserialize(stream);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to load dock layout: {ex.Message}");
+            }
         }
     }
 }

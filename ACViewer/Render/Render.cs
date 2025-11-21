@@ -146,7 +146,8 @@ namespace ACViewer.Render
         {
             if (!MainMenu.ShowParticles || !ParticlesInitted) return;
 
-            if (!GameView.Instance.IsActive) return;
+            // Allow particles to continue even when floating panels have focus
+            // if (!GameView.Instance.IsActive) return;
 
             PerfTimer.Start(ProfilerSection.ParticleUpdate);
 

@@ -401,5 +401,25 @@ namespace ACViewer.View
             var armorWindow = new ArmorList();
             armorWindow.ShowDialog();
         }
+
+        private void ShowHistoryPanel_Click(object sender, RoutedEventArgs e)
+        {
+            FileExplorer.Instance?.TogglePanelVisibility("History", optionShowHistory.IsChecked);
+        }
+
+        private void ShowMotionsPanel_Click(object sender, RoutedEventArgs e)
+        {
+            FileExplorer.Instance?.TogglePanelVisibility("Motions", optionShowMotions.IsChecked);
+        }
+
+        private void ShowScriptsPanel_Click(object sender, RoutedEventArgs e)
+        {
+            FileExplorer.Instance?.TogglePanelVisibility("Scripts", optionShowScripts.IsChecked);
+        }
+
+        private void ShowClothingPanel_Click(object sender, RoutedEventArgs e)
+        {
+            FileExplorer.Instance?.TogglePanelVisibility("Clothing", optionShowClothing.IsChecked);
+        }
     }
 }

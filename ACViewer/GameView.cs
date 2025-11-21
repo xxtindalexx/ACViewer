@@ -25,6 +25,11 @@ namespace ACViewer
         public KeyboardState PrevKeyboardState { get; set; }
         public MouseState PrevMouseState { get; set; }
 
+        // For handling mouse input when in floating window
+        public bool UseExternalMouseState { get; set; }
+        public MouseState ExternalMouseState { get; set; }
+        public MouseState PrevExternalMouseState { get; set; }
+
         public new Render.Render Render { get; set; }
         
         public static Camera Camera { get; set; }
@@ -130,7 +135,7 @@ namespace ACViewer
         {
             // every update we can now query the keyboard & mouse for our WpfGame
             var keyboardState = _keyboard.GetState();
-            var mouseState = _mouse.GetState();
+            var mouseState = UseExternalMouseState ? ExternalMouseState : _mouse.GetState();
 
             if (keyboardState.IsKeyDown(Keys.C) && !PrevKeyboardState.IsKeyDown(Keys.C))
             {
@@ -175,6 +180,9 @@ namespace ACViewer
 
             PrevKeyboardState = keyboardState;
             PrevMouseState = mouseState;
+
+            if (UseExternalMouseState)
+                PrevExternalMouseState = ExternalMouseState;
 
             base.Update(time);
         }

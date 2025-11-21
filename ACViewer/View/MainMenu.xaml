@@ -59,6 +59,11 @@
                 <MenuItem Header="Show _Location" Click="ShowLocation_Click" />
                 <MenuItem x:Name="optionShowHUD" Header="Show _HUD" Click="ShowHUD_Click" />
                 <MenuItem x:Name="optionShowParticles" Header="Show _Particles in World Viewer" Click="ShowParticles_Click" />
+                <Separator />
+                <MenuItem x:Name="optionShowHistory" Header="Show _History Panel" IsCheckable="True" IsChecked="True" Click="ShowHistoryPanel_Click" />
+                <MenuItem x:Name="optionShowMotions" Header="Show _Motions Panel" IsCheckable="True" IsChecked="True" Click="ShowMotionsPanel_Click" />
+                <MenuItem x:Name="optionShowScripts" Header="Show _Scripts Panel" IsCheckable="True" IsChecked="True" Click="ShowScriptsPanel_Click" />
+                <MenuItem x:Name="optionShowClothing" Header="Show _Clothing Panel" IsCheckable="True" IsChecked="True" Click="ShowClothingPanel_Click" />
             </MenuItem>
             <MenuItem Header="_Help">
                 <MenuItem Header="_View Help" Click="Guide_Click">

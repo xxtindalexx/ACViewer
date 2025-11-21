@@ -4,34 +4,59 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ACViewer.View"
-        xmlns:scenes="clr-namespace:ACViewer" d:DataContext="{d:DesignInstance Type=local:MainWindow}"
+        xmlns:scenes="clr-namespace:ACViewer"
+        xmlns:avalonDock="https://github.com/Dirkster99/AvalonDock"
+        d:DataContext="{d:DesignInstance Type=local:MainWindow}"
         mc:Ignorable="d"
         Title="ACViewer" Width="1342" Height="798" Style="{DynamicResource CustomWindowStyle}" SourceInitialized="Window_SourceInitialized" Closing="Window_Closing">
-    
-    <Grid x:Name="LayoutRoot">
 
+    <Grid x:Name="LayoutRoot">
         <Grid.RowDefinitions>
             <RowDefinition Height="20" />
-            <RowDefinition Height=".1*" />
-            <RowDefinition Name="HSplit" Height="67" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Name="VSplit" Width="360" />
-            <ColumnDefinition Width="20" />
-            <ColumnDefinition Width=".1*" />
-        </Grid.ColumnDefinitions>
 
-        <local:MainMenu x:Name="menuMain" Grid.Row="0" Grid.ColumnSpan="3"/>
+        <local:MainMenu x:Name="menuMain" Grid.Row="0"/>
 
-        <local:FileExplorer Grid.Row="1" Margin="0,0,0,7.5"/>
+        <avalonDock:DockingManager x:Name="MainDockManager" Grid.Row="1" AllowMixedOrientation="True">
+            <avalonDock:DockingManager.Layout>
+                <avalonDock:LayoutRoot>
+                    <avalonDock:LayoutPanel Orientation="Horizontal">
 
-        <GridSplitter Grid.Column="1" Grid.Row="1" HorizontalAlignment="Center" Width="4.5"/>
+                        <!-- Left side: File Explorer and FileInfo -->
+                        <avalonDock:LayoutAnchorablePaneGroup DockWidth="360" Orientation="Vertical">
+                            <avalonDock:LayoutAnchorablePane>
+                                <avalonDock:LayoutAnchorable x:Name="FileExplorerAnchorable" ContentId="FileExplorer" Title="File Explorer" CanClose="False" CanHide="True">
+                                    <local:FileExplorer />
+                                </avalonDock:LayoutAnchorable>
+                            </avalonDock:LayoutAnchorablePane>
+                        </avalonDock:LayoutAnchorablePaneGroup>
 
-        <scenes:GameView x:Name="Scene" Grid.Row="1" Grid.Column="2" Margin="0,22,10,7.5" />
+                        <!-- Center: GameView as anchorable panel -->
+                        <avalonDock:LayoutAnchorablePaneGroup DockWidth="*">
+                            <avalonDock:LayoutAnchorablePane>
+                                <avalonDock:LayoutAnchorable x:Name="GameViewAnchorable" ContentId="GameView" Title="Viewer" CanClose="False" CanHide="True" CanFloat="True">
+                                    <scenes:GameView x:Name="Scene" Focusable="True" PreviewMouseDown="Scene_PreviewMouseDown" PreviewMouseRightButtonDown="Scene_PreviewMouseRightButtonDown" PreviewMouseRightButtonUp="Scene_PreviewMouseRightButtonUp" ContextMenu="{x:Null}" />
+                                </avalonDock:LayoutAnchorable>
+                            </avalonDock:LayoutAnchorablePane>
+                        </avalonDock:LayoutAnchorablePaneGroup>
 
-        <GridSplitter Grid.Row="2" Grid.ColumnSpan="3" HorizontalAlignment="Stretch" VerticalAlignment="Top" Height="3.75" ResizeDirection="Rows" />
+                    </avalonDock:LayoutPanel>
 
-        <TextBox Name="Status" TextWrapping="Wrap" Margin="7.5,7.5,7.5,7.5" Padding="3" Grid.Row="2" Grid.ColumnSpan="3" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                    <!-- Bottom: Status panel -->
+                    <avalonDock:LayoutRoot.BottomSide>
+                        <avalonDock:LayoutAnchorSide>
+                            <avalonDock:LayoutAnchorGroup>
+                                <avalonDock:LayoutAnchorable x:Name="StatusAnchorable" ContentId="Status" Title="Status" CanClose="False" CanHide="True" AutoHideHeight="100">
+                                    <TextBox Name="Status" TextWrapping="Wrap" Padding="3" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                                </avalonDock:LayoutAnchorable>
+                            </avalonDock:LayoutAnchorGroup>
+                        </avalonDock:LayoutAnchorSide>
+                    </avalonDock:LayoutRoot.BottomSide>
+
+                </avalonDock:LayoutRoot>
+            </avalonDock:DockingManager.Layout>
+        </avalonDock:DockingManager>
 
     </Grid>
 

@@ -155,8 +155,6 @@ namespace ACViewer.View
             Config.WindowPos.Y = (int)Top;
             Config.WindowPos.Width = (int)Width;
             Config.WindowPos.Height = (int)Height;
-            Config.WindowPos.VSplit = (int)VSplit.Width.Value;
-            Config.WindowPos.HSplit = (int)HSplit.Height.Value;
             Config.WindowPos.IsMaximized = WindowState == WindowState.Maximized;
 
             ConfigManager.SaveConfig();
@@ -167,15 +165,113 @@ namespace ACViewer.View
             if (Config.WindowPos.X == int.MinValue)
                 return;
 
-            Left =  Config.WindowPos.X;
+            Left = Config.WindowPos.X;
             Top = Config.WindowPos.Y;
             Width = Config.WindowPos.Width;
             Height = Config.WindowPos.Height;
-            VSplit.Width = new GridLength(Config.WindowPos.VSplit, GridUnitType.Pixel);
-            HSplit.Height = new GridLength(Config.WindowPos.HSplit, GridUnitType.Pixel);
 
             if (Config.WindowPos.IsMaximized)
                 WindowState = WindowState.Maximized;
+
+            // Setup floating window focus fix for main dock manager
+            SetupFloatingWindowFocusFix();
+        }
+
+        private void SetupFloatingWindowFocusFix()
+        {
+            var focusTimer = new System.Windows.Threading.DispatcherTimer();
+            focusTimer.Interval = TimeSpan.FromMilliseconds(16); // ~60fps for smooth mouse tracking
+            focusTimer.Tick += (s, args) =>
+            {
+                var mousePos = System.Windows.Forms.Control.MousePosition;
+                bool overFloating = false;
+                bool gameViewIsFloated = GameViewAnchorable.IsFloating;
+
+                // Check if over any floating window
+                foreach (var floatingWindow in MainDockManager.FloatingWindows)
+                {
+                    var bounds = new System.Drawing.Rectangle(
+                        (int)floatingWindow.Left, (int)floatingWindow.Top,
+                        (int)floatingWindow.Width, (int)floatingWindow.Height);
+
+                    if (bounds.Contains(mousePos.X, mousePos.Y))
+                    {
+                        overFloating = true;
+                        break;
+                    }
+                }
+
+                // Also check FileExplorer's dock manager if it exists
+                if (!overFloating && FileExplorer.Instance?.DockManager != null)
+                {
+                    foreach (var floatingWindow in FileExplorer.Instance.DockManager.FloatingWindows)
+                    {
+                        var bounds = new System.Drawing.Rectangle(
+                            (int)floatingWindow.Left, (int)floatingWindow.Top,
+                            (int)floatingWindow.Width, (int)floatingWindow.Height);
+
+                        if (bounds.Contains(mousePos.X, mousePos.Y))
+                        {
+                            overFloating = true;
+                            break;
+                        }
+                    }
+                }
+
+                // Handle GameView mouse input when floated
+                if (GameView.Instance != null)
+                {
+                    GameView.Instance.IsHitTestVisible = !overFloating || gameViewIsFloated;
+
+                    // Inject mouse state when GameView is floated
+                    if (gameViewIsFloated)
+                    {
+                        GameView.Instance.UseExternalMouseState = true;
+
+                        var buttons = System.Windows.Forms.Control.MouseButtons;
+                        var rightPressed = (buttons & System.Windows.Forms.MouseButtons.Right) != 0;
+
+                        // Use screen coordinates directly - camera uses delta anyway
+                        var leftButton = (buttons & System.Windows.Forms.MouseButtons.Left) != 0
+                            ? Microsoft.Xna.Framework.Input.ButtonState.Pressed
+                            : Microsoft.Xna.Framework.Input.ButtonState.Released;
+                        var rightButton = rightPressed
+                            ? Microsoft.Xna.Framework.Input.ButtonState.Pressed
+                            : Microsoft.Xna.Framework.Input.ButtonState.Released;
+                        var middleButton = (buttons & System.Windows.Forms.MouseButtons.Middle) != 0
+                            ? Microsoft.Xna.Framework.Input.ButtonState.Pressed
+                            : Microsoft.Xna.Framework.Input.ButtonState.Released;
+
+                        GameView.Instance.ExternalMouseState = new Microsoft.Xna.Framework.Input.MouseState(
+                            mousePos.X, mousePos.Y,
+                            0, leftButton, middleButton, rightButton,
+                            Microsoft.Xna.Framework.Input.ButtonState.Released,
+                            Microsoft.Xna.Framework.Input.ButtonState.Released);
+                    }
+                    else
+                    {
+                        GameView.Instance.UseExternalMouseState = false;
+                    }
+                }
+            };
+            focusTimer.Start();
+        }
+
+        private void Scene_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            Scene.Focus();
+            Activate();
+        }
+
+        private void Scene_PreviewMouseRightButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            // Capture mouse to ensure GameView receives all mouse events during drag
+            Scene.CaptureMouse();
+        }
+
+        private void Scene_PreviewMouseRightButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            Scene.ReleaseMouseCapture();
         }
     }
 }

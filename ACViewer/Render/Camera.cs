@@ -296,10 +296,12 @@ namespace ACViewer
         {
             if (Mouse == null || Locked) return;
 
-            var mouseState = Mouse.GetState();
+            var mouseState = GameView.UseExternalMouseState ? GameView.ExternalMouseState : Mouse.GetState();
+            var prevMouseState = GameView.UseExternalMouseState ? GameView.PrevExternalMouseState : PrevMouseState;
             var keyboardState = Keyboard.GetState();
 
-            if (!GameView.IsActive) return;
+            // Allow input when using external mouse state (floated window)
+            if (!GameView.IsActive && !GameView.UseExternalMouseState) return;
 
             if (keyboardState.IsKeyDown(Keys.W))
                 Position += Dir * Speed;
@@ -338,9 +340,9 @@ namespace ACViewer
             LastKeyboardState = keyboardState;
 
             // Mouse wheel: zoom in Model view, speed control in other views
-            if (mouseState.ScrollWheelValue != PrevMouseState.ScrollWheelValue)
+            if (mouseState.ScrollWheelValue != prevMouseState.ScrollWheelValue)
             {
-                var diff = mouseState.ScrollWheelValue - PrevMouseState.ScrollWheelValue;
+                var diff = mouseState.ScrollWheelValue - prevMouseState.ScrollWheelValue;
 
                 if (GameView.ViewMode == ViewMode.Model)
                 {
@@ -364,7 +366,7 @@ namespace ACViewer
                 }
             }
 
-            if (mouseState.LeftButton == ButtonState.Pressed && PrevMouseState.LeftButton != ButtonState.Pressed)
+            if (mouseState.LeftButton == ButtonState.Pressed && prevMouseState.LeftButton != ButtonState.Pressed)
             {
                 if (GameView.ViewMode == ViewMode.World)
                     Picker.HandleLeftClick(mouseState.X, mouseState.Y);
@@ -372,7 +374,7 @@ namespace ACViewer
 
             if (mouseState.RightButton == ButtonState.Pressed)
             {
-                if (PrevMouseState.RightButton == ButtonState.Pressed)
+                if (prevMouseState.RightButton == ButtonState.Pressed)
                 {
                     MouseEx.GetCursorPos(out var cursorPos);
 
@@ -381,8 +383,8 @@ namespace ACViewer
 
                     if (ConfigManager.Config.Mouse.AltMethod)
                     {
-                        xDiff = mouseState.X - PrevMouseState.X;
-                        yDiff = mouseState.Y - PrevMouseState.Y;
+                        xDiff = mouseState.X - prevMouseState.X;
+                        yDiff = mouseState.Y - prevMouseState.Y;
                     }
 
                     if (GameView.ViewMode == ViewMode.Model)
@@ -424,7 +426,7 @@ namespace ACViewer
                 if (!ConfigManager.Config.Mouse.AltMethod)
                     LastSetPoint = MouseEx.SetCursor(GameView.Instance, centerX, centerY);
             }
-            else if (PrevMouseState.RightButton == ButtonState.Pressed)
+            else if (prevMouseState.RightButton == ButtonState.Pressed)
             {
                 if (ConfigManager.Config.Mouse.AltMethod)
                     Mouse.SetCursor(centerX, centerY);

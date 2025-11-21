@@ -99,7 +99,8 @@ namespace ACViewer
 
         public void UpdatePhysics(GameTime time)
         {
-            if (!GameView.Instance.IsActive) return;
+            // Allow animations to continue even when floating panels have focus
+            // if (!GameView.Instance.IsActive) return;
 
             // update anim only?
             PhysicsObj.update_animation();

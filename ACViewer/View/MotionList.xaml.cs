@@ -35,7 +35,7 @@ namespace ACViewer.View
             BuildMotionCommands();
         }
 
-        public void OnClickSetup(uint fileID)
+        public bool OnClickSetup(uint fileID)
         {
             // get motion table for this setup
             // this mapping is not stored in the client data, and is derived from the server databases
@@ -52,7 +52,7 @@ namespace ACViewer.View
             else
                 mtableID = didTable.MotionTableID;
 
-            if (mtableID == 0) return;
+            if (mtableID == 0) return false;
 
             MainWindow.Status.WriteLine($"Motion table: {mtableID:X8}");
 
@@ -65,6 +65,7 @@ namespace ACViewer.View
             SetCommands(commands);
 
             SetDefaultStance();
+            return true;
         }
 
         public void BuildMotionCommands()
